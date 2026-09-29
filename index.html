@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GENITUS GROWTH SCREENER</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root{--bg:#f4f7fb;--surface:#ffffff;--panel:#ffffff;--border:#d9e2ec;--accent:#0e7490;--gold:#b45309;--green:#15803d;--red:#b91c1c;--muted:#52606d;--text:#1e293b;--bright:#0f172a;--mono:'Space Mono',monospace;--sans:'Rajdhani',sans-serif;}
+    :root.dark-theme{--bg:#080c10;--surface:#0d1117;--panel:#111820;--border:#1e2d3d;--accent:#00d4ff;--gold:#f0c040;--green:#00ff88;--red:#ff3b5c;--muted:#7d92a8;--text:#c8d8e8;--bright:#ffffff;}
+    *{margin:0;padding:0;box-sizing:border-box;}
+    body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:15px;min-height:100vh;transition:background .25s,color .25s;}
+    header{background:var(--surface);border-bottom:1px solid var(--border);padding:0 20px;display:flex;align-items:center;justify-content:space-between;height:56px;position:sticky;top:0;z-index:200;}
+    .logo{display:flex;align-items:center;gap:12px;}
+    .logo-mark{width:32px;height:32px;border:2px solid var(--gold);display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:14px;color:var(--gold);}
+    .logo-text{font-family:var(--mono);font-size:13px;letter-spacing:3px;color:var(--bright);}
+    .logo-sub{font-family:var(--mono);font-size:10px;letter-spacing:2px;color:var(--muted);display:block;margin-top:1px;}
+    #themeToggleBtn{background:none;border:1px solid var(--border);color:var(--accent);width:30px;height:30px;border-radius:2px;cursor:pointer;font-size:14px;}
+    .controls{background:var(--surface);border-bottom:1px solid var(--border);padding:12px 20px;display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;}
+    .field-label{font-family:var(--mono);font-size:10px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-bottom:4px;display:block;}
+    select,input[type="text"],input[type="number"]{background:var(--bg);border:1px solid var(--border);color:var(--text);font-family:var(--mono);font-size:12px;padding:8px 10px;outline:none;border-radius:2px;}
+    label.chk{font-family:var(--mono);font-size:11px;color:var(--muted);display:flex;align-items:center;gap:6px;padding-bottom:8px;}
+    .methodology{background:var(--panel);border-bottom:1px solid var(--border);padding:10px 20px;font-family:var(--mono);font-size:11px;color:var(--muted);line-height:1.7;}
+    .methodology b{color:var(--gold);}
+    .content{max-width:1300px;margin:0 auto;padding:18px;}
+    table{width:100%;border-collapse:collapse;background:var(--surface);border:1px solid var(--border);}
+    th{font-family:var(--mono);font-size:9px;letter-spacing:1px;color:var(--muted);text-transform:uppercase;padding:9px 10px;text-align:left;border-bottom:1px solid var(--border);cursor:pointer;position:sticky;top:0;background:var(--panel);}
+    th:hover{color:var(--gold);}
+    td{padding:8px 10px;font-size:12px;border-bottom:1px solid rgba(125,146,168,0.15);}
+    .sym{font-family:var(--mono);color:var(--accent);font-weight:700;}
+    .badge{font-family:var(--mono);font-size:10px;padding:2px 7px;border-radius:2px;display:inline-block;}
+    .badge-cut{background:rgba(255,59,92,0.15);color:var(--red);}
+    .badge-ok{background:rgba(0,255,136,0.1);color:var(--green);}
+    .chowder-hi{color:var(--green);font-weight:700;}
+    .chowder-lo{color:var(--muted);}
+    .empty-state{padding:60px;text-align:center;color:var(--muted);font-family:var(--mono);font-size:12px;}
+  </style>
+</head>
+<body>
+<header>
+  <div class="logo"><div class="logo-mark">Γ</div><div><span class="logo-text">GENITUS</span><span class="logo-sub">GROWTH SCREENER</span></div></div>
+  <button id="themeToggleBtn" title="Toggle theme">🌙</button>
+</header>
+<div class="controls">
+  <div><span class="field-label">Exchange</span><select id="exSelect" onchange="runScreen()"></select></div>
+  <div><span class="field-label">Min. Years Tracked</span><input type="number" id="minYears" value="2" min="1" style="width:70px" onchange="runScreen()"></div>
+  <label class="chk"><input type="checkbox" id="cutOnly" onchange="renderTable()"> Cut-Risk only</label>
+  <div><span class="field-label">Search</span><input type="text" id="searchInput" oninput="renderTable()" placeholder="Symbol or name..."></div>
+</div>
+<div class="methodology">
+  <b>Chowder Number</b> = Trailing Yield % + Dividend CAGR % (annualized growth of yearly payout across all tracked years). A well-known dividend-growth-investor heuristic (popularized on Seeking Alpha) for screening — rule of thumb: ≥12% is considered acceptable for slow-growing/high-yield names, ≥15% for lower-yield growth names. It is a screening heuristic, not a guarantee.
+  <b>Yield Percentile</b> ranks a stock's yield against every OTHER confirmed payer on the SAME exchange right now (cross-sectional, not self-history).
+  <b>Cut-Risk</b> flags stocks whose most recent tracked year's total payout was lower than the year before — pulled directly from already-computed streak direction, not re-estimated.
+</div>
+<div class="content">
+  <table id="screenerTable" style="display:none">
+    <thead><tr>
+      <th data-key="symbol">Symbol</th><th data-key="name">Name</th><th data-key="yieldPct">Yield</th>
+      <th data-key="divCagr">Div. CAGR</th><th data-key="chowder">Chowder #</th>
+      <th data-key="percentile">Yield Percentile</th><th data-key="years">Years Tracked</th><th data-key="cutRisk">Cut-Risk</th>
+    </tr></thead>
+    <tbody id="screenerBody"></tbody>
+  </table>
+  <div class="empty-state" id="emptyState">Select an exchange above to run the screener.</div>
+</div>
+<script>
+  const SUMMARY_URL = 'https://raw.githubusercontent.com/Babybounce500/genitus-ticker-cache/main/dividend-summary.csv';
+  const HISTORY_URL = 'https://raw.githubusercontent.com/Babybounce500/genitus-ticker-cache/main/dividend-history.csv';
+  (function(){
+    const KEY='genitusTheme:growth';
+    function applyTheme(t){ document.documentElement.classList.toggle('dark-theme', t==='dark'); localStorage.setItem(KEY,t); const btn=document.getElementById('themeToggleBtn'); if(btn) btn.textContent = t==='dark' ? '☀' : '🌙'; }
+    window.__theme = localStorage.getItem(KEY) || 'light';
+    applyTheme(window.__theme);
+    document.addEventListener('DOMContentLoaded', function(){ const btn=document.getElementById('themeToggleBtn'); if(btn) btn.addEventListener('click', function(){ window.__theme = window.__theme==='dark' ? 'light' : 'dark'; applyTheme(window.__theme); }); });
+  })();
+  function parseCSVLine(line){
+    const out=[]; let cur=''; let inQ=false;
+    for(let i=0;i<line.length;i++){ const c=line[i];
+      if(inQ){ if(c==='"'){ if(line[i+1]==='"'){cur+='"';i++;} else inQ=false; } else cur+=c; }
+      else { if(c===','){ out.push(cur); cur=''; } else if(c==='"'){ inQ=true; } else cur+=c; } }
+    out.push(cur); return out;
+  }
+  let summaryByExchange = new Map(); let historyBySymbol = new Map(); let cacheReady = null;
+  function loadCache(){
+    if(cacheReady) return cacheReady;
+    cacheReady = Promise.all([ fetch(SUMMARY_URL).then(r=>r.text()), fetch(HISTORY_URL).then(r=>r.text()) ]).then(([sText,hText])=>{
+      const sLines = sText.split('\n').filter(Boolean);
+      for(let i=1;i<sLines.length;i++){
+        const [fullSymbol,name,type,ex,count,streakYears,streakDir,yieldPct,price,lastDate,lastAmount,lastCurrency] = parseCSVLine(sLines[i]);
+        if(!fullSymbol||!ex) continue;
+        if(!summaryByExchange.has(ex)) summaryByExchange.set(ex, []);
+        summaryByExchange.get(ex).push({ fullSymbol, name:(name||'').trim(), type, ex, count:parseInt(count)||0, streakYears:parseInt(streakYears)||1, streakDir:streakDir||'new', yieldPct:parseFloat(yieldPct)||0, price:price?parseFloat(price):null });
+      }
+      const hLines = hText.split('\n').filter(Boolean);
+      for(let i=1;i<hLines.length;i++){
+        const [fullSymbol,date,amount] = parseCSVLine(hLines[i]);
+        if(!fullSymbol) continue;
+        if(!historyBySymbol.has(fullSymbol)) historyBySymbol.set(fullSymbol, []);
+        historyBySymbol.get(fullSymbol).push({ date, value:parseFloat(amount)||0 });
+      }
+    }).catch(e=>console.warn('Cache load failed:', e.message));
+    return cacheReady;
+  }
+  const EXCHANGES = [
+    {g:'🇺🇸 United States',opts:['US','NYSE','NASDAQ','AMEX','PINK','OTCQB','OTCQX','BATS']},
+    {g:'🇨🇦 Canada',opts:['TO','V','NEO']}, {g:'🌎 Latin America',opts:['MX','SA','BA','SN','LIM']},
+    {g:'🇬🇧 United Kingdom',opts:['LSE','IL']},
+    {g:'🇩🇪 Germany',opts:['XETRA','F','STU','DU','BE','MU','HM','HA']},
+    {g:'🇱🇺 Luxembourg',opts:['LU']}, {g:'🇮🇪 Ireland',opts:['IR']},
+    {g:'🇫🇷 France',opts:['PA']}, {g:'🇳🇱 Netherlands',opts:['AS']}, {g:'🇧🇪 Belgium',opts:['BR']},
+    {g:'🇵🇹 Portugal',opts:['LS']}, {g:'🇨🇭 Switzerland',opts:['SW']}, {g:'🇪🇸 Spain',opts:['MC']},
+    {g:'🇦🇹 Austria',opts:['VI']}, {g:'🇬🇷 Greece',opts:['AT']},
+    {g:'🇸🇪 Scandinavia',opts:['ST','OL','CO','HE']},
+    {g:'🇵🇱 Eastern Europe',opts:['WAR','PR','BUD','RO','ZSE']},
+    {g:'🇷🇺 Russia',opts:['MCX']}, {g:'🇹🇷 Turkey',opts:['IS']}, {g:'🇮🇱 Israel',opts:['TA']},
+    {g:'🇿🇦 Africa',opts:['JSE','EGX','BC','XNAI','XZIM','XBOT','LUSE','GSE','USE','RSE','DSE','SEM','MSE','XNSA']},
+    {g:'🇭🇰 Hong Kong',opts:['HK']}, {g:'🇨🇳 China',opts:['SHG','SHE']},
+    {g:'🇰🇷 Korea',opts:['KO','KQ']}, {g:'🇮🇳 India',opts:['NSE']}, {g:'🇵🇰 Pakistan',opts:['KAR']},
+    {g:'🇱🇰 Sri Lanka',opts:['CM']}, {g:'🇸🇬 Southeast Asia',opts:['KLSE','BK','JK','VN','PSE']},
+    {g:'🇹🇼 Taiwan',opts:['TW','TWO']}, {g:'🇦🇺 Australia',opts:['AU']},
+  ];
+  function buildExchangeSelect(){
+    document.getElementById('exSelect').innerHTML = '<option value="">— Select Market —</option>' +
+      EXCHANGES.map(g=>`<optgroup label="${g.g}">${g.opts.map(o=>`<option value="${o}">${o}</option>`).join('')}</optgroup>`).join('');
+  }
+  function mean(arr){ return arr.reduce((s,v)=>s+v,0)/arr.length; }
+
+  let scoredList = [], sortKey='chowder', sortDir='desc';
+
+  async function runScreen(){
+    const ex = document.getElementById('exSelect').value;
+    if(!ex){ scoredList=[]; document.getElementById('screenerTable').style.display='none'; document.getElementById('emptyState').style.display='block'; return; }
+    await loadCache();
+    const minYears = parseInt(document.getElementById('minYears').value)||1;
+    const rows = summaryByExchange.get(ex)||[];
+
+    const enriched = rows.map(r=>{
+      const hist = historyBySymbol.get(r.fullSymbol) || [];
+      const byYear = {};
+      hist.forEach(h=>{ const y=new Date(h.date).getFullYear(); if(!y) return; byYear[y]=(byYear[y]||0)+h.value; });
+      const years = Object.keys(byYear).map(Number).sort((a,b)=>a-b);
+      let divCagr = 0;
+      if(years.length>=2){
+        const first = byYear[years[0]], last = byYear[years[years.length-1]];
+        const span = years.length-1;
+        if(first>0 && span>0) divCagr = (Math.pow(last/first, 1/span)-1)*100;
+      }
+      return { ...r, divCagr, yearsTracked: years.length, chowder: r.yieldPct + divCagr };
+    }).filter(r=>r.yearsTracked>=minYears);
+
+    // Cross-sectional yield percentile vs. every OTHER payer on this exchange (all years, unfiltered).
+    const allYields = rows.map(r=>r.yieldPct).sort((a,b)=>a-b);
+    enriched.forEach(r=>{
+      const below = allYields.filter(y=>y<r.yieldPct).length;
+      r.percentile = allYields.length ? (below/allYields.length*100) : 0;
+    });
+
+    scoredList = enriched;
+    document.getElementById('screenerTable').style.display = scoredList.length ? 'table' : 'none';
+    document.getElementById('emptyState').style.display = scoredList.length ? 'none' : 'block';
+    if(!scoredList.length) document.getElementById('emptyState').textContent = 'No symbols meet the minimum years-tracked filter for this exchange.';
+    renderTable();
+  }
+
+  document.addEventListener('DOMContentLoaded', ()=>{
+    document.querySelectorAll('th[data-key]').forEach(th=>{
+      th.addEventListener('click', ()=>{
+        const key = th.dataset.key;
+        if(sortKey===key) sortDir = sortDir==='desc'?'asc':'desc'; else { sortKey=key; sortDir='desc'; }
+        renderTable();
+      });
+    });
+  });
+
+  function renderTable(){
+    const q = document.getElementById('searchInput').value.toLowerCase().trim();
+    const cutOnly = document.getElementById('cutOnly').checked;
+    let rows = scoredList.filter(r=>(!q || r.fullSymbol.toLowerCase().includes(q) || r.name.toLowerCase().includes(q)) && (!cutOnly || r.streakDir==='down'));
+    const dir = sortDir==='asc'?1:-1;
+    rows = rows.slice().sort((a,b)=>{
+      let av,bv;
+      if(sortKey==='symbol'){ av=a.fullSymbol; bv=b.fullSymbol; }
+      else if(sortKey==='name'){ av=a.name; bv=b.name; }
+      else if(sortKey==='yieldPct'){ av=a.yieldPct; bv=b.yieldPct; }
+      else if(sortKey==='divCagr'){ av=a.divCagr; bv=b.divCagr; }
+      else if(sortKey==='chowder'){ av=a.chowder; bv=b.chowder; }
+      else if(sortKey==='percentile'){ av=a.percentile; bv=b.percentile; }
+      else if(sortKey==='years'){ av=a.yearsTracked; bv=b.yearsTracked; }
+      else if(sortKey==='cutRisk'){ av=a.streakDir==='down'?1:0; bv=b.streakDir==='down'?1:0; }
+      if(typeof av==='string') return av.localeCompare(bv)*dir;
+      return (av-bv)*dir;
+    });
+    document.getElementById('screenerBody').innerHTML = rows.slice(0,500).map(r=>`
+      <tr>
+        <td><span class="sym">${r.fullSymbol}</span></td>
+        <td>${r.name}</td>
+        <td>${r.yieldPct.toFixed(2)}%</td>
+        <td>${r.divCagr>=0?'+':''}${r.divCagr.toFixed(1)}%</td>
+        <td class="${r.chowder>=12?'chowder-hi':'chowder-lo'}">${r.chowder.toFixed(1)}</td>
+        <td>${r.percentile.toFixed(0)}th pct.</td>
+        <td>${r.yearsTracked}</td>
+        <td>${r.streakDir==='down'?'<span class="badge badge-cut">CUT RISK</span>':'<span class="badge badge-ok">stable/up</span>'}</td>
+      </tr>`).join('');
+  }
+  buildExchangeSelect();
+</script>
+</body>
+</html>
