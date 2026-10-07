@@ -134,11 +134,19 @@
     const minYears = parseInt(document.getElementById('minYears').value)||1;
     const rows = summaryByExchange.get(ex)||[];
 
+    const currentYear = new Date().getFullYear();
     const enriched = rows.map(r=>{
       const hist = historyBySymbol.get(r.fullSymbol) || [];
       const byYear = {};
-      hist.forEach(h=>{ const y=new Date(h.date).getFullYear(); if(!y) return; byYear[y]=(byYear[y]||0)+h.value; });
-      const years = Object.keys(byYear).map(Number).sort((a,b)=>a-b);
+      hist.forEach(h=>{ const y=new Date(h.date).getFullYear(); if(!y || y>=currentYear) return; byYear[y]=(byYear[y]||0)+h.value; });
+      const allYears = Object.keys(byYear).map(Number).sort((a,b)=>a-b);
+      // Use only the most recent UNBROKEN run of consecutive years -- a
+      // suspended-then-resumed payer (e.g. AAPL: paid 1987-1995, nothing
+      // 1996-2011, resumed 2012) must not have its CAGR computed straight
+      // across that gap as if it were continuous growth.
+      let runStart = allYears.length-1;
+      while(runStart>0 && allYears[runStart]-allYears[runStart-1]===1) runStart--;
+      const years = allYears.slice(runStart);
       let divCagr = 0;
       if(years.length>=2){
         const first = byYear[years[0]], last = byYear[years[years.length-1]];
